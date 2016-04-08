@@ -4,60 +4,133 @@ import java.sql.*;
  * Created by MadoGiga on 2016-04-01.
  */
 public class UserDao {
-    public User get(String id) throws SQLException, ClassNotFoundException {
-        //사용자는 어디에 저장되어 있는가
-        //DataBase를 사용하자
-        //어떤 database를 사용하는가
-        //Mysql
 
-        //Connection을 맺고
-        Class.forName("com.mysql.jdbc.Driver");
-        Connection connection = DriverManager.getConnection("jdbc:mysql://localhost/jeju", "jeju", "jejupw");
-        //쿼리를 만들어서
-        PreparedStatement preparedStatement = connection.prepareStatement(
-                "select * from userinfo where id = ?");
-        preparedStatement.setString(1, id);
+    private final ConnectionMaker connectionMaker;
 
-        //실행시키고
+    UserDao(ConnectionMaker connectionMaker){
+        this.connectionMaker = connectionMaker;
+    }
 
-        ResultSet resultSet = preparedStatement.executeQuery();
-        resultSet.next();
-        //결과를 User에 잘 매핑하고
+    public User get(Long id) throws SQLException, ClassNotFoundException {
 
-        User user = new User();
-        user.setId(resultSet.getString("id"));
-        user.setName(resultSet.getString("name"));
-        user.setPassword(resultSet.getString("password"));
-        //자원을 해지한다.
-        resultSet.close();
-        preparedStatement.close();
-        connection.close();
+        Connection connection = null;
+        PreparedStatement preparedStatement = null;
+        ResultSet resultSet = null;
+        User user = null;
+        try {
+            connection = connectionMaker.getConnection();
+
+            preparedStatement = connection.prepareStatement(
+                    "select * from userinfo where id = ?");
+            preparedStatement.setLong(1, id);
+
+            resultSet = preparedStatement.executeQuery();
+            resultSet.next();
+
+            user = new User();
+            user.setId(resultSet.getLong("id"));
+            user.setName(resultSet.getString("name"));
+            user.setPassword(resultSet.getString("password"));
+
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        } finally {
+            if(resultSet != null){
+                try {
+                    resultSet.close();
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                }
+            }
+            if(preparedStatement != null) {
+                try {
+                    preparedStatement.close();
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                }
+            }
+            if(connection != null){
+                try {
+                    connection.close();
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+
+
         return user;
     }
 
-    public void add(User user) throws ClassNotFoundException, SQLException {
-        //사용자는 어디에 저장되어 있는가
-        //DataBase를 사용하자
-        //어떤 database를 사용하는가
-        //Mysql
+    public Long add(User user) throws ClassNotFoundException, SQLException {
 
-        //Connection을 맺고
-        Class.forName("com.mysql.jdbc.Driver");
-        Connection connection = DriverManager.getConnection("jdbc:mysql://localhost/jeju", "jeju", "jejupw");
-        //쿼리를 만들어서
+        Connection connection = connectionMaker.getConnection();
+
         PreparedStatement preparedStatement = connection.prepareStatement(
-                "insert into userinfo(id, name, password) values(?, ?, ?)");
-        preparedStatement.setString(1, user.getId());
-        preparedStatement.setString(2, user.getName());
-        preparedStatement.setString(3, user.getPassword());
+                "insert into userinfo(name, password) values(?, ?)");
 
-        //실행시키고
+        preparedStatement.setString(1, user.getName());
+        preparedStatement.setString(2, user.getPassword());
 
         preparedStatement.executeUpdate();
 
-
-        //자원을 해지한다.
+        Long id = getLastInsertId(connection);
         preparedStatement.close();
         connection.close();
+
+        return id;
+    }
+
+    private Long getLastInsertId(Connection connection) throws SQLException {
+        PreparedStatement preparedStatement2 = connection.prepareStatement(
+                "select last_insert_id()");
+
+        ResultSet resultSet = preparedStatement2.executeQuery();
+        resultSet.next();
+
+        Long id = resultSet.getLong(1);
+
+        resultSet.close();
+        preparedStatement2.close();
+        return id;
+
+    }
+
+    public void delete(Long id) throws ClassNotFoundException, SQLException {
+        Connection connection = null;
+        PreparedStatement preparedStatement = null;
+        try {
+            connection = connectionMaker.getConnection();
+
+            String sql = "delete from userinfo where id = ?";
+            preparedStatement = connection.prepareStatement(sql);
+            preparedStatement.setLong(1, id);
+
+            preparedStatement.executeUpdate();
+
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+            throw e;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            throw e;
+        } finally {
+            if(preparedStatement != null) {
+                try {
+                    preparedStatement.close();
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                }
+            }
+            if(connection != null){
+                try {
+                    connection.close();
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
     }
 }
