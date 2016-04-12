@@ -19,24 +19,17 @@ public class UserDaoTest {
 
     @Before
     public void setup() {
-//        ApplicationContext applicationContext = new GenericXmlApplicationContext("daoFactory.xml");
-        //UserDao userDao = new DaoFactory().getUserDao();
         ApplicationContext applicationContext = new AnnotationConfigApplicationContext(DaoFactory.class);
         userDao = (UserDao) applicationContext.getBean("userDao");
-        //userDao = applicationContext.getBean("userDao");
     }
 
     @Test
     public void get() throws SQLException, ClassNotFoundException {
-//        UserDao userDao = new UserDao(new SimpleConnectionMaker());
-
-
         Long id = 1L;
         String name = "허윤호";
         String password = "1234";
 
         User user = userDao.get(id);
-
 
         validate(id, name, password, user);
     }
@@ -57,8 +50,6 @@ public class UserDaoTest {
 
         user.setPassword(password);
         user.setName(name);
-
-//        UserDao userDao = new UserDao(new SimpleConnectionMaker());
 
         Long id = userDao.add(user);
 
@@ -93,6 +84,13 @@ public class UserDaoTest {
         user.setName(name);
         user.setPassword(password);
         Long id = userDao.add(user);
+
+        name = "hyh";
+        password = "1111";
+
+        user.setName(name);
+        user.setPassword(password);
+        user.setId(id);
 
         userDao.update(user);
 

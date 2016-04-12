@@ -65,21 +65,42 @@ public class UserDao {
     }
 
     public Long add(User user) throws ClassNotFoundException, SQLException {
+        Connection connection = null;
+        PreparedStatement preparedStatement = null;
+        Long id = null;
 
-        Connection connection = connectionMaker.getConnection();
+        try {
+            connection = connectionMaker.getConnection();
 
-        PreparedStatement preparedStatement = connection.prepareStatement(
-                "insert into userinfo(name, password) values(?, ?)");
+            String sql = "insert into userinfo(name, password) values(?, ?)";
+            preparedStatement = connection.prepareStatement(sql);
+            preparedStatement.setString(1, user.getName());
+            preparedStatement.setString(2, user.getPassword());
 
-        preparedStatement.setString(1, user.getName());
-        preparedStatement.setString(2, user.getPassword());
+            preparedStatement.executeUpdate();
 
-        preparedStatement.executeUpdate();
-
-        Long id = getLastInsertId(connection);
-        preparedStatement.close();
-        connection.close();
-
+            id = getLastInsertId(connection);
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        } finally {
+            if(preparedStatement != null){
+                try {
+                    preparedStatement.close();
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                }
+            }
+            if(connection != null){
+                try {
+                    connection.close();
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                } finally {
+                }
+            }
+        }
         return id;
     }
 
